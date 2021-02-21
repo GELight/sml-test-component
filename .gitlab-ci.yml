@@ -1,0 +1,51 @@
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+stages:
+  - semver
+  - publish
+  - deploy
+
+semantic-versioning:
+  stage: semver
+  script:
+    - 'docker run --rm
+       -e "GIT_REPOSITORY=ssh://git@$CI_SERVER_HOST:4242/$CI_PROJECT_PATH.git"
+       -e "DEPLOY_KEY=$DEPLOY_KEY"
+       docker.ycow.io:8930/cownetworkz/devops/semantic-versioning-js'
+  only:
+    - master
+
+publish-npm:
+  stage: publish
+  script:
+    - 'docker run --rm
+       -e "GIT_REPOSITORY=ssh://git@$CI_SERVER_HOST:4242/$CI_PROJECT_PATH.git"
+       -e "DEPLOY_KEY=$DEPLOY_KEY"
+       -e "NPM_REGISTRY=$NPM_REGISTRY"
+       -e "NPM_SCOPE=$NPM_SCOPE"
+       -e "NPM_USER=$NPM_USER"
+       -e "NPM_TOKEN=$NPM_TOKEN"
+       -e "NPM_EMAIL=$NPM_EMAIL"
+       docker.ycow.io:8930/cownetworkz/devops/npm-publish'
+  only:
+    - master
+
+deploy-s3:
+  stage: deploy
+  script:
+    - 'docker run --rm
+       -e "GIT_REPOSITORY=ssh://git@$CI_SERVER_HOST:4242/$CI_PROJECT_PATH.git"
+       -e "DEPLOY_KEY=$DEPLOY_KEY"
+       -e "NPM_REGISTRY=$NPM_REGISTRY"
+       -e "NPM_SCOPE=$NPM_SCOPE"
+       -e "NPM_USER=$NPM_USER"
+       -e "NPM_TOKEN=$NPM_TOKEN"
+       -e "NPM_EMAIL=$NPM_EMAIL"
+       -e "AWS_KEY=$AWS_KEY"
+       -e "AWS_SECRET=$AWS_SECRET"
+       -e "AWS_ENDPOINT=$AWS_ENDPOINT"
+       -e "AWS_BUCKET=$AWS_BUCKET"
+       docker.ycow.io:8930/ycow/ui/js-deployer'
+  only:
+    - master
